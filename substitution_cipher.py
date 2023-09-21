@@ -22,44 +22,54 @@ def shiftText(shiftNumber: int, text: str):
             newText += char
     return newText
 
-def mapText(mapper: str, text: str):
+def mapText(mapper: str, text: str, encryptDecrypt: str):
     newText = ''
 
     for char in text:
         # check if the character is lowercase
+
         charCode = ord(char)
         if charCode >= 97 and charCode <= 122:
             letterCode = charCode - 97
-            newLetter = mapper[letterCode]
+            if encryptDecrypt == 'e':
+                newLetter = mapper[letterCode]
+            else:
+                newLetter = chr(mapper.index(chr(letterCode + 97)) + 97)
             newText += newLetter
 
         # check if the character is uppercase
         elif charCode >=65 and charCode <= 90:
             letterCode = charCode - 65
-            newLetter = mapper[letterCode].upper()
+            if encryptDecrypt == 'e':
+                newLetter = mapper[letterCode].upper()
+            else:
+                newLetter = chr(mapper.index(chr(letterCode + 97)) + 97).upper()
             newText += newLetter
         else:
             newText += char
     return newText
 
-key = 'e 5 d 4 e zyxwvutsrqponmlkjihgfedcba'
-text = 'Hello, I am studying Information Security!'
+key = input()
 
-print(text)
+read_plaintext = []
+
+for line in sys.stdin:
+    read_plaintext.append(line.strip('\n'))
+
+text = '\n'.join(read_plaintext)
 
 splittedKeys = key.split()
 
 result = text
 for i in range(0, len(splittedKeys), 2):
     
-    if splittedKeys[i] == 'e':
-        multiplier = 1
-    else:
-        multiplier = -1
-
     if splittedKeys[i+1].isnumeric():
+        if splittedKeys[i] == 'e':
+            multiplier = 1
+        else:
+            multiplier = -1
         result = shiftText(int(splittedKeys[i+1]) * multiplier, result)    
     else:
-        result = mapText(str(splittedKeys[i+1]), result)
+        result = mapText(str(splittedKeys[i+1]), result, splittedKeys[i+1])
 
-    print(result)
+print(result)
