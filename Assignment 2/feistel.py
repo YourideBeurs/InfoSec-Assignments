@@ -1,56 +1,34 @@
-import struct
 import sys
-
 import struct
 
-def feistel_cipher(key, data, decrypt=False):
-    # Define the Feistel function
-    def feistel_function(right_half, subkey):
-        return right_half ^ subkey
+def feistel_function(data: int, key: bytes) -> int:
+    return int.from_bytes(key, byteorder='little')
 
-    # Split data into 8-byte blocks
-    block_size = 8
-    num_blocks = len(data) // block_size
-    encrypted_data = bytearray()
+def feistel_cipher(key: bytes, data: bytes, mode: str) -> bytes:
+    if len(data) % 8 != 0:
+        raise ValueError("Data length must be a multiple of 8 bytes")
 
-    for block_index in range(num_blocks):
-        block_start = block_index * block_size
-        block_end = (block_index + 1) * block_size
-        block = data[block_start:block_end]
+    output = bytearray()
 
-        # Split block into left and right halves
-        left_half, right_half = struct.unpack("<II", block)
+    # Process each 8-byte block
+    for i in range(0, len(data), 8):
+        block = data[i:i+8]
+        LH, RH = struct.unpack('<II', block)
 
-        # Perform Feistel network rounds
-        num_rounds = len(key) // 4  # Since each round uses 4 bytes of the key
-        for round_num in range(num_rounds):
-            subkey = struct.unpack("<I", key[round_num*4 : (round_num+1)*4])[0]
-            
-            if decrypt:
-                subkey = struct.unpack("<I", key[-(round_num+1)*4 : -round_num*4])[0]
+        # Number of rounds is the length of the key divided by 4
+        for j in range(0, len(key), 4):
+            LH, RH = RH, LH ^ feistel_function(RH, key[j:j+4])
 
-            new_right_half = left_half ^ feistel_function(right_half, subkey)
-            left_half, right_half = right_half, new_right_half
+        output.extend(struct.pack('<II', LH, RH))
 
-        # Merge left and right halves before storing in the result
-        encrypted_data += struct.pack("<II", left_half, right_half)
-
-    return encrypted_data
-
+    return output
 
 def main():
     content = sys.stdin.buffer.read()
-    mode_byte, _, rest = content.partition(b'\xFF')
-    key, _, input_data = rest.partition(b'\xFF')
-
-    mode = 'd' if mode_byte == b'd' else 'e'
-    
-    if mode == 'd':
-        decrypted_data = feistel_cipher(key, input_data, decrypt=True)
-        sys.stdout.buffer.write(decrypted_data)
-    elif mode == 'e':
-        encrypted_data = feistel_cipher(key, input_data)
-        sys.stdout.buffer.write(encrypted_data)
+    mode_data, key, data = [part for part in content.split(b'\xFF',2) if part]
+    mode = 'e' if mode_data == b'e' else 'd'
+    result = feistel_cipher(key, data, mode)
+    sys.stdout.buffer.write(result)
 
 if __name__ == "__main__":
     main()
