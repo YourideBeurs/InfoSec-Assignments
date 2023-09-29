@@ -2,10 +2,13 @@ import sys
 
 def rc4_init(key: bytes) -> list:
     S = list(range(256))
+    K = [key[i % len(key)] for i in range(256)]  # repeating the key to fill the K array
+
     j = 0
     for i in range(256):
-        j = (j + S[i] + key[i % len(key)]) % 256
+        j = (j + S[i] + K[i]) % 256
         S[i], S[j] = S[j], S[i]
+
     return S
 
 def rc4_stream(S: list) -> int:
@@ -16,7 +19,7 @@ def rc4_stream(S: list) -> int:
         S[i], S[j] = S[j], S[i]
         yield S[(S[i] + S[j]) % 256]
 
-def rc4_encrypt(key: bytes, data: bytes, drop: int = 3072) -> bytes:
+def rc4_encrypt(key: bytes, data: bytes, drop: int = 256) -> bytes:  # setting drop default value to 256
     S = rc4_init(key)
     stream = rc4_stream(S)
 
@@ -25,6 +28,7 @@ def rc4_encrypt(key: bytes, data: bytes, drop: int = 3072) -> bytes:
         next(stream)
 
     return bytes([x ^ next(stream) for x in data])
+
 
 def main():
     content = sys.stdin.buffer.read()
