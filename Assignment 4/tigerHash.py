@@ -1,9 +1,8 @@
 import struct
 
-# Tiger constants
-TIGER_SBOXES = [
-    # S-box values would be added here
-]
+from sboxes import t1, t2, t3, t4
+
+TIGER_SBOXES = [t1, t2, t3, t4]
 
 TIGER_INIT = (0x0123456789ABCDEF, 0xFEDCBA9876543210, 0xF096A5B4C3B2E187)
 
@@ -42,12 +41,13 @@ def tiger_compress(state, block):
         c, a, b = tiger_round(c, a, b, temp[5], 5)
         a, b, c = tiger_round(a, b, c, temp[6], 5)
         b, c, a = tiger_round(b, c, a, temp[7], 5)
+        a, b, c = b, c, a
 
         temp = [temp[i] for i in [7,6,5,4,3,2,1,0]]
 
     a = xor(a, aa)
     b = add(b, bb)
-    c = mul8(c, cc)
+    c = mul8(c)
 
     return a, b, c
 
@@ -70,5 +70,5 @@ def tiger_hash(message):
     return ''.join(map(lambda x: format(x, '016x'), state))
 
 if __name__ == '__main__':
-    msg = input("Enter the message: ").encode('utf-8')
+    msg = input().encode('utf-8')
     print(tiger_hash(msg))
